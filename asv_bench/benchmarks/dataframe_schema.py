@@ -56,8 +56,8 @@ class Decorators:
     Benchmarking input and output decorator performance.
     """
 
-    def transformer(df):
-        return df.assign(column2=[1, 2, 3])
+    def transformer(self):
+        return self.assign(column2=[1, 2, 3])
 
     def setup(self):
         self.in_schema = DataFrameSchema({"column1": Column(String)})

@@ -79,13 +79,12 @@ def test_infer_dataframe_statistics(multi_index: bool, nullable: bool) -> None:
             assert DEFAULT_FLOAT.check(stat_columns["int"]["dtype"])
         else:
             assert DEFAULT_INT.check(stat_columns["int"]["dtype"])
+    elif nullable:
+        assert DEFAULT_FLOAT.check(stat_columns["boolean"]["dtype"])
     else:
-        if nullable:
-            assert DEFAULT_FLOAT.check(stat_columns["boolean"]["dtype"])
-        else:
-            assert pandas_engine.Engine.dtype(bool).check(
-                stat_columns["boolean"]["dtype"]
-            )
+        assert pandas_engine.Engine.dtype(bool).check(
+            stat_columns["boolean"]["dtype"]
+        )
 
     assert DEFAULT_FLOAT.check(stat_columns["float"]["dtype"])
     assert pandas_engine.Engine.dtype(str).check(

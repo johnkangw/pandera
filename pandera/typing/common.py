@@ -1,4 +1,5 @@
 """Common typing functionality."""
+
 # pylint:disable=abstract-method,disable=too-many-ancestors
 
 import inspect
@@ -130,10 +131,7 @@ Schema = TypeVar("Schema", bound="SchemaModel")  # type: ignore
 
 
 # pylint:disable=invalid-name
-if TYPE_CHECKING:
-    T = TypeVar("T")  # pragma: no cover
-else:
-    T = Schema
+T = TypeVar("T") if TYPE_CHECKING else Schema
 
 
 class DataFrameBase(Generic[T]):
@@ -215,9 +213,7 @@ class AnnotationInfo:  # pylint:disable=too-few-public-methods
     def is_generic_df(self) -> bool:
         """True if the annotation is a DataFrameBase subclass."""
         try:
-            if self.origin is None:
-                return False
-            return issubclass(self.origin, DataFrameBase)
+            return False if self.origin is None else issubclass(self.origin, DataFrameBase)
         except TypeError:
             return False
 

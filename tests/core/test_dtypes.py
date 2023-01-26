@@ -1,5 +1,6 @@
 """Tests a variety of python and pandas dtypes, and tests some specific
 coercion examples."""
+
 # pylint doesn't know about __init__ generated with dataclass
 # pylint:disable=unexpected-keyword-arg,no-value-for-parameter
 import dataclasses
@@ -83,18 +84,14 @@ complex_dtypes = {
 }
 
 if FLOAT_128_AVAILABLE:
-    float_dtypes.update(
-        {
-            pa.Float128: "float128",
-            np.float128: "float128",
-        }
-    )
-    complex_dtypes.update(
-        {
-            pa.Complex256: "complex256",
-            np.complex256: "complex256",
-        }
-    )
+    float_dtypes |= {
+        pa.Float128: "float128",
+        np.float128: "float128",
+    }
+    complex_dtypes |= {
+        pa.Complex256: "complex256",
+        np.complex256: "complex256",
+    }
 
 NULLABLE_FLOAT_DTYPES = None
 if pa.PANDAS_1_2_0_PLUS:
@@ -114,9 +111,7 @@ string_dtypes = {
 
 nullable_string_dtypes = {pd.StringDtype: "string"}
 if pa.PANDAS_1_3_0_PLUS:
-    nullable_string_dtypes.update(
-        {pd.StringDtype(storage="pyarrow"): "string[pyarrow]"}
-    )
+    nullable_string_dtypes[pd.StringDtype(storage="pyarrow")] = "string[pyarrow]"
 
 object_dtypes = {object: "object", np.object_: "object"}
 
@@ -221,9 +216,7 @@ def pytest_generate_tests(metafunc: Metafunc) -> None:
         for fixture in ("data_type", "dtype", "pd_dtype", "data")
         if fixture in metafunc.fixturenames
     ]
-    arg_names = ",".join(fixtures)
-
-    if arg_names:
+    if arg_names := ",".join(fixtures):
         arg_values = []
         for dtypes, data in dtype_fixtures:
             for dtype, pd_dtype in dtypes.items():
@@ -530,17 +523,7 @@ def test_is_uint(uint_dtype: Any, expected: bool):
     assert pa.dtypes.is_uint(pandera_dtype) == expected
 
 
-@pytest.mark.parametrize(
-    "float_dtype, expected",
-    [
-        (dtype, True)
-        for dtype in (
-            *float_dtypes,
-            *(NULLABLE_FLOAT_DTYPES if NULLABLE_FLOAT_DTYPES else []),
-        )
-    ]
-    + [("string", False)],  # type: ignore
-)
+@pytest.mark.parametrize("float_dtype, expected", ([(dtype, True) for dtype in (*float_dtypes, *NULLABLE_FLOAT_DTYPES or [])] + [("string", False)]))
 def test_is_float(float_dtype: Any, expected: bool):
     """Test is_float."""
     pandera_dtype = pandas_engine.Engine.dtype(float_dtype)

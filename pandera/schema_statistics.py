@@ -22,7 +22,7 @@ def infer_dataframe_statistics(df: pd.DataFrame) -> Dict[str, Any]:
         for col, dtype in inferred_column_dtypes.items()
     }
     return {
-        "columns": column_statistics if column_statistics else None,
+        "columns": column_statistics or None,
         "index": infer_index_statistics(df.index),
     }
 
@@ -63,7 +63,7 @@ def infer_index_statistics(index: Union[pd.Index, pd.MultiIndex]):
             UserWarning,
         )
         index_statistics = []
-    return index_statistics if index_statistics else None
+    return index_statistics or None
 
 
 def parse_check_statistics(check_stats: Union[Dict[str, Any], None]):
@@ -78,12 +78,12 @@ def parse_check_statistics(check_stats: Union[Dict[str, Any], None]):
         except TypeError:
             # if stats cannot be unpacked as key-word args, assume unary check.
             checks.append(check(stats))
-    return checks if checks else None
+    return checks or None
 
 
 def get_dataframe_schema_statistics(dataframe_schema):
     """Get statistical properties from dataframe schema."""
-    statistics = {
+    return {
         "columns": {
             col_name: {
                 "dtype": column.dtype,
@@ -104,7 +104,6 @@ def get_dataframe_schema_statistics(dataframe_schema):
         ),
         "coerce": dataframe_schema.coerce,
     }
-    return statistics
 
 
 def _get_series_base_schema_statistics(series_schema_base):
@@ -171,7 +170,7 @@ def parse_checks(checks) -> Union[Dict[str, Any], None]:
                 f"and {_check_memo['less_than_or_equal_to']} are incompatible, reason: "
                 f"min value {min_value} > max value {max_value}"
             )
-    return check_statistics if check_statistics else None
+    return check_statistics or None
 
 
 def _get_array_type(x):
@@ -210,4 +209,4 @@ def _get_array_check_statistics(
         }
     else:
         check_stats = {}
-    return check_stats if check_stats else None
+    return check_stats or None

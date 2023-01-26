@@ -48,10 +48,7 @@ class Series(SeriesBase, pd.Series, Generic[GenericDtype]):  # type: ignore
 
 
 # pylint:disable=invalid-name
-if TYPE_CHECKING:
-    T = TypeVar("T")  # pragma: no cover
-else:
-    T = Schema
+T = TypeVar("T") if TYPE_CHECKING else Schema
 
 
 # pylint:disable=too-few-public-methods

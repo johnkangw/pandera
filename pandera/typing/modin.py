@@ -1,5 +1,6 @@
 """Pandera type annotations for Dask."""
 
+
 from typing import TYPE_CHECKING, Generic, TypeVar
 
 from .common import DataFrameBase, IndexBase, SeriesBase
@@ -14,12 +15,7 @@ except ImportError:
 
 
 # pylint:disable=invalid-name
-if TYPE_CHECKING:
-    T = TypeVar("T")  # pragma: no cover
-else:
-    T = Schema
-
-
+T = TypeVar("T") if TYPE_CHECKING else Schema
 if MODIN_INSTALLED:
 
     # pylint: disable=too-few-public-methods

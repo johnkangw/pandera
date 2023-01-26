@@ -72,16 +72,10 @@ def _serialize_dataframe_stats(dataframe_checks):
     Serialize global dataframe check statistics into json/yaml-compatible
     format.
     """
-    serialized_checks = {}
-
-    for check_name, check_stats in dataframe_checks.items():
-        # The case that `check_name` is not registered is handled in
-        # `parse_checks` so we know that `check_name` exists.
-
-        # infer dtype of statistics and serialize them
-        serialized_checks[check_name] = _serialize_check_stats(check_stats)
-
-    return serialized_checks
+    return {
+        check_name: _serialize_check_stats(check_stats)
+        for check_name, check_stats in dataframe_checks.items()
+    }
 
 
 def _serialize_component_stats(component_stats):
@@ -90,12 +84,12 @@ def _serialize_component_stats(component_stats):
     """
     serialized_checks = None
     if component_stats["checks"] is not None:
-        serialized_checks = {}
-        for check_name, check_stats in component_stats["checks"].items():
-            serialized_checks[check_name] = _serialize_check_stats(
+        serialized_checks = {
+            check_name: _serialize_check_stats(
                 check_stats, component_stats["dtype"]
             )
-
+            for check_name, check_stats in component_stats["checks"].items()
+        }
     dtype = component_stats.get("dtype")
     if dtype:
         dtype = str(dtype)
@@ -211,7 +205,7 @@ def _deserialize_schema(serialized_schema):
     from pandera import Index, MultiIndex
 
     # GH#475
-    serialized_schema = serialized_schema if serialized_schema else {}
+    serialized_schema = serialized_schema or {}
 
     if not isinstance(serialized_schema, Mapping):
         raise pandera.errors.SchemaDefinitionError(

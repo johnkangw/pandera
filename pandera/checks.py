@@ -69,14 +69,12 @@ class _CheckMeta(type):  # pragma: no cover
 
     REGISTERED_CUSTOM_CHECKS: Dict[str, Callable] = {}  # noqa
 
-    def __getattr__(cls, name: str) -> Any:
+    def __getattr__(self, name: str) -> Any:
         """Prevent attribute errors for registered checks."""
-        attr = ChainMap(cls.__dict__, cls.REGISTERED_CUSTOM_CHECKS).get(name)
+        attr = ChainMap(self.__dict__, self.REGISTERED_CUSTOM_CHECKS).get(name)
         if attr is None:
             raise AttributeError(
-                f"'{cls}' object has no attribute '{name}'. "
-                "Make sure any custom checks have been registered "
-                "using the extensions api."
+                f"'{self}' object has no attribute '{name}'. Make sure any custom checks have been registered using the extensions api."
             )
         return attr
 
@@ -91,12 +89,7 @@ class _CheckMeta(type):  # pragma: no cover
     @no_type_check
     def __contains__(cls: Type[_T], item: Union[_T, str]) -> bool:
         """Allow lookups for registered checks."""
-        if isinstance(item, cls):
-            name = item.name
-            return hasattr(cls, name)
-
-        # assume item is str
-        return hasattr(cls, item)
+        return hasattr(cls, item.name) if isinstance(item, cls) else hasattr(cls, item)
 
 
 class _CheckBase(metaclass=_CheckMeta):
@@ -294,9 +287,8 @@ class _CheckBase(metaclass=_CheckMeta):
         """
         if groups is None:
             return dict(list(groupby_obj))
-        group_keys = set(group_key for group_key, _ in groupby_obj)
-        invalid_groups = [g for g in groups if g not in group_keys]
-        if invalid_groups:
+        group_keys = {group_key for group_key, _ in groupby_obj}
+        if invalid_groups := [g for g in groups if g not in group_keys]:
             raise KeyError(
                 f"groups {invalid_groups} provided in `groups` argument not a valid group "
                 f"key. Valid group keys: {group_keys}"

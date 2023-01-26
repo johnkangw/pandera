@@ -1,5 +1,6 @@
 """Unit tests for modin data structures."""
 
+
 import os
 import typing
 from unittest.mock import MagicMock
@@ -31,24 +32,16 @@ except ImportError:
 UNSUPPORTED_STRATEGY_DTYPE_CLS = set(UNSUPPORTED_STRATEGY_DTYPE_CLS)
 UNSUPPORTED_STRATEGY_DTYPE_CLS.add(numpy_engine.Object)
 
-TEST_DTYPES_ON_MODIN = []
-# pylint: disable=redefined-outer-name
-for dtype_cls in pandas_engine.Engine.get_registered_dtypes():
-    if (
-        dtype_cls in UNSUPPORTED_STRATEGY_DTYPE_CLS
-        or (
-            pandas_engine.Engine.dtype(dtype_cls)
-            not in SUPPORTED_STRATEGY_DTYPES
-        )
-        or not (
-            pandas_engine.GEOPANDAS_INSTALLED
-            and dtype_cls == pandas_engine.Geometry
-        )
-    ):
-        continue
-    TEST_DTYPES_ON_MODIN.append(pandas_engine.Engine.dtype(dtype_cls))
-
-
+TEST_DTYPES_ON_MODIN = [
+    pandas_engine.Engine.dtype(dtype_cls)
+    for dtype_cls in pandas_engine.Engine.get_registered_dtypes()
+    if dtype_cls not in UNSUPPORTED_STRATEGY_DTYPE_CLS
+    and pandas_engine.Engine.dtype(dtype_cls) in SUPPORTED_STRATEGY_DTYPES
+    and (
+        pandas_engine.GEOPANDAS_INSTALLED
+        and dtype_cls == pandas_engine.Geometry
+    )
+]
 ENGINES = os.getenv("CI_MODIN_ENGINES", "").split(",")
 if ENGINES == [""]:
     ENGINES = ["ray", "dask"]
@@ -63,16 +56,16 @@ def setup_modin_engine(request):
     engine = request.param
     os.environ["MODIN_ENGINE"] = engine
     os.environ["MODIN_MEMORY"] = "100000000"
-    if engine == "ray":
-        # pylint: disable=import-outside-toplevel
-        import ray
-
-        ray.init()
-    elif engine == "dask":
+    if engine == "dask":
         # pylint: disable=import-outside-toplevel
         from distributed import Client
 
         Client()
+    elif engine == "ray":
+        # pylint: disable=import-outside-toplevel
+        import ray
+
+        ray.init()
     yield
     if engine == "ray":
         ray.shutdown()

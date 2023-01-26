@@ -238,13 +238,13 @@ class Column(SeriesSchemaBase):
                 ).fillna(False)
                 matches = matches & np.array(matched.tolist())
             column_keys_to_check = columns[matches]
+        elif check_utils.is_multiindex(columns):
+            raise IndexError(
+                f"Column regex name {self.name} is a string, expected a "
+                "dataframe where the index is a pd.Index object, not a "
+                "pd.MultiIndex object"
+            )
         else:
-            if check_utils.is_multiindex(columns):
-                raise IndexError(
-                    f"Column regex name {self.name} is a string, expected a "
-                    "dataframe where the index is a pd.Index object, not a "
-                    "pd.MultiIndex object"
-                )
             column_keys_to_check = columns[
                 # str.match will return nan values when the index value is
                 # not a string.
@@ -651,7 +651,7 @@ class MultiIndex(DataFrameSchema):
         # rename integer-based column names in case of duplicate index names,
         # with at least one named index.
         if (
-            not all(x is None for x in check_obj.index.names)
+            any(x is not None for x in check_obj.index.names)
             and len(set(check_obj.index.names)) != check_obj.index.nlevels
         ):
             index_names = []

@@ -23,7 +23,7 @@ _extras_require = {
 
 extras_require = {
     **_extras_require,
-    "all": list(set(x for y in _extras_require.values() for x in y)),
+    "all": list({x for y in _extras_require.values() for x in y}),
 }
 
 setup(

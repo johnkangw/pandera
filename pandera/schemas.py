@@ -268,10 +268,9 @@ class DataFrameSchema:  # pylint: disable=too-many-public-methods
             for check in column.checks:
                 if check.groupby is None or callable(check.groupby):
                     continue
-                nonexistent_groupby_columns = [
+                if nonexistent_groupby_columns := [
                     c for c in check.groupby if c not in self.columns
-                ]
-                if nonexistent_groupby_columns:
+                ]:
                     raise errors.SchemaInitError(
                         f"groupby argument {nonexistent_groupby_columns} in "
                         f"Check for Column {column_name} not "
@@ -303,10 +302,9 @@ class DataFrameSchema:  # pylint: disable=too-many-public-methods
 
         :returns: dictionary of columns and their associated dtypes.
         """
-        regex_columns = [
+        if regex_columns := [
             name for name, col in self.columns.items() if col.regex
-        ]
-        if regex_columns:
+        ]:
             warnings.warn(
                 "Schema has columns specified as regex column names: "
                 f"{regex_columns}. Use the `get_dtypes` to get the datatypes "
@@ -325,12 +323,10 @@ class DataFrameSchema:  # pylint: disable=too-many-public-methods
         regex_dtype = {}
         for _, column in self.columns.items():
             if column.regex:
-                regex_dtype.update(
-                    {
-                        c: column.dtype
-                        for c in column.get_regex_columns(dataframe.columns)
-                    }
-                )
+                regex_dtype |= {
+                    c: column.dtype
+                    for c in column.get_regex_columns(dataframe.columns)
+                }
         return {
             **{n: c.dtype for n, c in self.columns.items() if not c.regex},
             **regex_dtype,
@@ -494,11 +490,7 @@ class DataFrameSchema:  # pylint: disable=too-many-public-methods
 
         if hasattr(check_obj, "dask"):
             # special case for dask dataframes
-            if inplace:
-                check_obj = check_obj.pandera.add_schema(self)
-            else:
-                check_obj = check_obj.copy()
-
+            check_obj = check_obj.pandera.add_schema(self) if inplace else check_obj.copy()
             check_obj = check_obj.map_partitions(
                 self._validate,
                 head=head,
@@ -570,11 +562,11 @@ class DataFrameSchema:  # pylint: disable=too-many-public-methods
             expanded_column_names = frozenset(column_names)
 
             # drop adjacent duplicated column names
-            if check_obj.columns.has_duplicates:
-                columns = [k for k, _ in itertools.groupby(check_obj.columns)]
-            else:
-                columns = check_obj.columns
-
+            columns = (
+                [k for k, _ in itertools.groupby(check_obj.columns)]
+                if check_obj.columns.has_duplicates
+                else check_obj.columns
+            )
             filter_out_columns = []
 
             for column in columns:
@@ -1022,11 +1014,9 @@ class DataFrameSchema:  # pylint: disable=too-many-public-methods
         """
         schema_copy = copy.deepcopy(self)
 
-        # ensure all specified keys are present in the columns
-        not_in_cols: List[str] = [
+        if not_in_cols := [
             x for x in cols_to_remove if x not in schema_copy.columns.keys()
-        ]
-        if not_in_cols:
+        ]:
             raise errors.SchemaInitError(
                 f"Keys {not_in_cols} not found in schema columns!"
             )
@@ -1144,11 +1134,9 @@ class DataFrameSchema:  # pylint: disable=too-many-public-methods
 
         new_schema = copy.deepcopy(self)
 
-        # ensure all specified keys are present in the columns
-        not_in_cols: List[str] = [
-            x for x in update_dict.keys() if x not in new_schema.columns.keys()
-        ]
-        if not_in_cols:
+        if not_in_cols := [
+            x for x in update_dict if x not in new_schema.columns.keys()
+        ]:
             raise errors.SchemaInitError(
                 f"Keys {not_in_cols} not found in schema columns!"
             )
@@ -1156,12 +1144,11 @@ class DataFrameSchema:  # pylint: disable=too-many-public-methods
         new_columns: Dict[str, Column] = {}
         for col in new_schema.columns:
             # check
-            if update_dict.get(col):
-                if update_dict[col].get("name"):
-                    raise errors.SchemaInitError(
-                        "cannot update 'name' \
+            if update_dict.get(col) and update_dict[col].get("name"):
+                raise errors.SchemaInitError(
+                    "cannot update 'name' \
                                              property of the column."
-                    )
+                )
             original_properties = new_schema.columns[col].properties
             if update_dict.get(col):
                 new_properties = copy.deepcopy(original_properties)
@@ -1225,20 +1212,16 @@ class DataFrameSchema:  # pylint: disable=too-many-public-methods
         """
         new_schema = copy.deepcopy(self)
 
-        # ensure all specified keys are present in the columns
-        not_in_cols: List[str] = [
-            x for x in rename_dict.keys() if x not in new_schema.columns.keys()
-        ]
-        if not_in_cols:
+        if not_in_cols := [
+            x for x in rename_dict if x not in new_schema.columns.keys()
+        ]:
             raise errors.SchemaInitError(
                 f"Keys {not_in_cols} not found in schema columns!"
             )
 
-        # ensure all new keys are not present in the current column names
-        already_in_columns: List[str] = [
+        if already_in_columns := [
             x for x in rename_dict.values() if x in new_schema.columns.keys()
-        ]
-        if already_in_columns:
+        ]:
             raise errors.SchemaInitError(
                 f"Keys {already_in_columns} already found in schema columns!"
             )
@@ -1247,11 +1230,11 @@ class DataFrameSchema:  # pylint: disable=too-many-public-methods
         # that exist in the rename_dict
 
         new_columns = {
-            (rename_dict[col_name] if col_name in rename_dict else col_name): (
-                col_attrs.set_name(rename_dict[col_name])
-                if col_name in rename_dict
-                else col_attrs
+            rename_dict.get(col_name, col_name): col_attrs.set_name(
+                rename_dict[col_name]
             )
+            if col_name in rename_dict
+            else col_attrs
             for col_name, col_attrs in new_schema.columns.items()
         }
 
@@ -1303,11 +1286,9 @@ class DataFrameSchema:  # pylint: disable=too-many-public-methods
 
         new_schema = copy.deepcopy(self)
 
-        # ensure all specified keys are present in the columns
-        not_in_cols: List[str] = [
+        if not_in_cols := [
             x for x in columns if x not in new_schema.columns.keys()
-        ]
-        if not_in_cols:
+        ]:
             raise errors.SchemaInitError(
                 f"Keys {not_in_cols} not found in schema columns!"
             )
@@ -1449,15 +1430,11 @@ class DataFrameSchema:  # pylint: disable=too-many-public-methods
 
         new_schema = copy.deepcopy(self)
 
-        keys_temp: List = (
-            list(set(keys)) if not isinstance(keys, list) else keys
-        )
+        keys_temp: List = keys if isinstance(keys, list) else list(set(keys))
 
-        # ensure all specified keys are present in the columns
-        not_in_cols: List[str] = [
+        if not_in_cols := [
             x for x in keys_temp if x not in new_schema.columns.keys()
-        ]
-        if not_in_cols:
+        ]:
             raise errors.SchemaInitError(
                 f"Keys {not_in_cols} not found in schema columns!"
             )
@@ -1611,16 +1588,14 @@ class DataFrameSchema:  # pylint: disable=too-many-public-methods
             else Index(
                 dtype=new_index.columns[list(new_index.columns)[0]].dtype,
                 checks=new_index.columns[list(new_index.columns)[0]].checks,
-                nullable=new_index.columns[
-                    list(new_index.columns)[0]
-                ].nullable,
+                nullable=new_index.columns[list(new_index.columns)[0]].nullable,
                 unique=new_index.columns[list(new_index.columns)[0]].unique,
                 coerce=new_index.columns[list(new_index.columns)[0]].coerce,
                 name=new_index.columns[list(new_index.columns)[0]].name,
             )
             if (len(list(new_index.columns)) == 1) and (new_index is not None)
             else None
-            if (len(list(new_index.columns)) == 0) and (new_index is not None)
+            if not list(new_index.columns) and new_index is not None
             else new_index
         )
 
@@ -2215,11 +2190,7 @@ class SeriesSchema(SeriesSchemaBase):
 
         if hasattr(check_obj, "dask"):
             # special case for dask series
-            if inplace:
-                check_obj = check_obj.pandera.add_schema(self)
-            else:
-                check_obj = check_obj.copy()
-
+            check_obj = check_obj.pandera.add_schema(self) if inplace else check_obj.copy()
             check_obj = check_obj.map_partitions(
                 self._validate,
                 head=head,
@@ -2339,11 +2310,11 @@ def _pandas_obj_to_validate(
             dataframe_or_series.sample(sample, random_state=random_state)
         )
     return (
-        dataframe_or_series
-        if not pandas_obj_subsample
-        else pd.concat(pandas_obj_subsample).pipe(
+        pd.concat(pandas_obj_subsample).pipe(
             lambda x: x[~x.index.duplicated()]
         )
+        if pandas_obj_subsample
+        else dataframe_or_series
     )
 
 

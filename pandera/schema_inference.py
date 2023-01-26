@@ -55,11 +55,7 @@ def _create_index(index_statistics):
         )
         for properties in index_statistics
     ]
-    if len(index) == 1:
-        index = index[0]  # type: ignore
-    else:
-        index = MultiIndex(index)  # type: ignore
-
+    index = index[0] if len(index) == 1 else MultiIndex(index)
     return index
 
 

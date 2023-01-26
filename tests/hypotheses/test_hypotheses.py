@@ -29,12 +29,7 @@ def test_dataframe_hypothesis_checks():
     Test that two specific implementations of a Hypothesis work as expected
     and that using a Column that wasn't defined will error.
     """
-    df = pd.DataFrame(
-        {
-            "col1": range(100, 201),
-            "col2": range(0, 101),
-        }
-    )
+    df = pd.DataFrame({"col1": range(100, 201), "col2": range(101)})
 
     hypothesis_check_schema = DataFrameSchema(
         columns={

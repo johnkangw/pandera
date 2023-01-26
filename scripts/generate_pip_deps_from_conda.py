@@ -59,10 +59,7 @@ def conda_package_to_pip(package: str) -> Optional[str]:
     if package in EXCLUDE:
         return None
 
-    if package in RENAME:
-        return RENAME[package]
-
-    return package
+    return RENAME[package] if package in RENAME else package
 
 
 def main(conda_file: Path, pip_file: Path, compare: bool = False) -> bool:
