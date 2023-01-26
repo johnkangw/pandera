@@ -79,18 +79,18 @@ class Engine(ABCMeta):
         cls._registry[engine] = _DtypeRegistry(dispatch=dtype, equivalents={})
         return engine
 
-    def _check_source_dtype(cls, data_type: Any) -> None:
-        if isinstance(data_type, cls._base_pandera_dtypes) or (
-            inspect.isclass(data_type)
-            and issubclass(data_type, cls._base_pandera_dtypes)
+    def _check_source_dtype(self, data_type: Any) -> None:
+        if (
+            isinstance(data_type, self._base_pandera_dtypes)
+            or inspect.isclass(data_type)
+            and issubclass(data_type, self._base_pandera_dtypes)
         ):
             base_names = [
                 f"{base.__module__}.{base.__qualname__}"
                 for base in cls._base_pandera_dtypes
             ]
             raise ValueError(
-                f"Subclasses of {base_names} cannot be registered"
-                f" with {cls.__name__}."
+                f"Subclasses of {base_names} cannot be registered with {self.__name__}."
             )
 
     def _register_from_parametrized_dtype(
@@ -116,13 +116,11 @@ class Engine(ABCMeta):
             cls._check_source_dtype(source_dtype)
             cls._registry[cls].dispatch.register(source_dtype, _method)
 
-    def _register_equivalents(
-        cls, pandera_dtype_cls: Type[DataType], *source_dtypes: Any
-    ) -> None:
+    def _register_equivalents(self, pandera_dtype_cls: Type[DataType], *source_dtypes: Any) -> None:
         pandera_dtype = pandera_dtype_cls()  # type: ignore
         for source_dtype in source_dtypes:
-            cls._check_source_dtype(source_dtype)
-            cls._registry[cls].equivalents[source_dtype] = pandera_dtype
+            self._check_source_dtype(source_dtype)
+            self._registry[self].equivalents[source_dtype] = pandera_dtype
 
     def register_dtype(
         cls: _EngineType,
@@ -176,18 +174,15 @@ class Engine(ABCMeta):
             cls._registered_dtypes.add(pandera_dtype_cls)
             return pandera_dtype_cls
 
-        if pandera_dtype_cls:
-            return _wrapper(pandera_dtype_cls)
+        return _wrapper(pandera_dtype_cls) if pandera_dtype_cls else _wrapper
 
-        return _wrapper
-
-    def dtype(cls: _EngineType, data_type: Any) -> _DataType:
+    def dtype(self, data_type: Any) -> _DataType:
         """Convert input into a Pandera :class:`DataType` object."""
-        if isinstance(data_type, cls._base_pandera_dtypes):
+        if isinstance(data_type, self._base_pandera_dtypes):
             return data_type
 
         if inspect.isclass(data_type) and issubclass(
-            data_type, cls._base_pandera_dtypes
+            data_type, self._base_pandera_dtypes
         ):
             try:
                 return data_type()
@@ -198,7 +193,7 @@ class Engine(ABCMeta):
                     + "Usage Tip: Use an instance or a string representation."
                 ) from err
 
-        registry = cls._registry[cls]
+        registry = self._registry[self]
 
         equivalent_data_type = registry.equivalents.get(data_type)
         if equivalent_data_type is not None:
@@ -208,12 +203,10 @@ class Engine(ABCMeta):
             return registry.dispatch(data_type)
         except (KeyError, ValueError):
             raise TypeError(
-                f"Data type '{data_type}' not understood by {cls.__name__}."
+                f"Data type '{data_type}' not understood by {self.__name__}."
             ) from None
 
-    def get_registered_dtypes(  # pylint:disable=W1401
-        cls,
-    ) -> List[Type[DataType]]:
+    def get_registered_dtypes(self) -> List[Type[DataType]]:
         """Return the :class:`pandera.dtypes.DataType`\s registered
         with this engine."""
-        return list(cls._registered_dtypes)
+        return list(self._registered_dtypes)

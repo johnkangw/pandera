@@ -675,9 +675,7 @@ def test_head_dataframe_schema() -> None:
     """Test that schema can validate head of dataframe, returns entire
     dataframe."""
 
-    df = pd.DataFrame(
-        {"col1": list(range(0, 100)) + list(range(-1, -1001, -1))}
-    )
+    df = pd.DataFrame({"col1": list(range(100)) + list(range(-1, -1001, -1))})
 
     schema = DataFrameSchema(
         columns={"col1": Column(int, Check(lambda s: s >= 0))}
@@ -691,9 +689,7 @@ def test_head_dataframe_schema() -> None:
 
 def test_tail_dataframe_schema() -> None:
     """Checks that validating the tail of a dataframe validates correctly."""
-    df = pd.DataFrame(
-        {"col1": list(range(0, 100)) + list(range(-1, -1001, -1))}
-    )
+    df = pd.DataFrame({"col1": list(range(100)) + list(range(-1, -1001, -1))})
 
     schema = DataFrameSchema(
         columns={"col1": Column(int, Check(lambda s: s < 0))}
@@ -1327,11 +1323,7 @@ def test_lazy_dataframe_unique() -> None:
         assert list(errors_df["index"].values) == [0, 3, 0, 3]
 
 
-@pytest.mark.parametrize(
-    "schema, data, expectation",
-    [
-        # case: series name doesn't match schema name
-        [
+@pytest.mark.parametrize("schema, data, expectation", [[
             SeriesSchema(name="foobar"),
             pd.Series(range(3)),
             {
@@ -1340,9 +1332,7 @@ def test_lazy_dataframe_unique() -> None:
                     "SeriesSchema": {"field_name('foobar')": [None]},
                 },
             },
-        ],
-        # case: series type doesn't match schema type
-        [
+        ], [
             SeriesSchema(int),
             pd.Series([0.1]),
             {
@@ -1351,9 +1341,7 @@ def test_lazy_dataframe_unique() -> None:
                     "SeriesSchema": {"dtype('int64')": ["float64"]},
                 },
             },
-        ],
-        # case: series index doesn't satisfy schema index
-        [
+        ], [
             SeriesSchema(index=Index(int)),
             pd.Series([1, 2, 3], index=list("abc")),
             {
@@ -1362,9 +1350,7 @@ def test_lazy_dataframe_unique() -> None:
                     "Index": {"dtype('int64')": ["object"]},
                 },
             },
-        ],
-        # case: SeriesSchema data-type coercion error
-        [
+        ], [
             SeriesSchema(float, coerce=True),
             pd.Series(["1", "foo", "bar"]),
             {
@@ -1376,9 +1362,7 @@ def test_lazy_dataframe_unique() -> None:
                     },
                 },
             },
-        ],
-        # case: series index coercion error
-        [
+        ], [
             SeriesSchema(index=Index(int, coerce=True)),
             pd.Series([1, 2, 3], index=list("abc")),
             {
@@ -1387,9 +1371,7 @@ def test_lazy_dataframe_unique() -> None:
                     "Index": {"coerce_dtype('int64')": ["a", "b", "c"]},
                 },
             },
-        ],
-        # case: series type and check doesn't satisfy schema
-        [
+        ], [
             SeriesSchema(int, checks=Check.greater_than(0)),
             pd.Series(["a", "b", "c"]),
             {
@@ -1408,9 +1390,7 @@ def test_lazy_dataframe_unique() -> None:
                     },
                 },
             },
-        ],
-        # case: multiple series checks don't satisfy schema
-        [
+        ], [
             Column(
                 int,
                 checks=[Check.greater_than(1), Check.less_than(3)],
@@ -1423,20 +1403,7 @@ def test_lazy_dataframe_unique() -> None:
                     "Column": {"greater_than(1)": [1], "less_than(3)": [3]},
                 },
             },
-        ],
-        [
-            Index(str, checks=Check.isin(["a", "b", "c"])),
-            pd.DataFrame({"col": [1, 2, 3]}, index=["a", "b", "d"]),
-            {
-                # expect that the data in the SchemaError is the pd.Index cast
-                # into a Series
-                "data": pd.Series(["a", "b", "d"]),
-                "schema_errors": {
-                    "Index": {f"isin({set(['a', 'b', 'c'])})": ["d"]},
-                },
-            },
-        ],
-        [
+        ], [Index(str, checks=Check.isin(["a", "b", "c"])), pd.DataFrame({"col": [1, 2, 3]}, index=["a", "b", "d"]), {"data": pd.Series(["a", "b", "d"]), "schema_errors": {"Index": {f"isin({{'a', 'b', 'c'}})": ["d"]}}}], [
             MultiIndex(
                 indexes=[
                     Index(int, checks=Check.greater_than(0), name="index0"),
@@ -1467,9 +1434,7 @@ def test_lazy_dataframe_unique() -> None:
                     },
                 },
             },
-        ],
-    ],
-)
+        ]])
 def test_lazy_series_validation_error(schema, data, expectation) -> None:
     """Test exceptions on lazy series validation."""
     try:
@@ -1562,20 +1527,19 @@ def test_schema_coerce_inplace_validation(
 @pytest.fixture
 def schema_simple() -> DataFrameSchema:
     """Simple schema fixture."""
-    schema = DataFrameSchema(
+    return DataFrameSchema(
         columns={
             "col1": Column(dtype=int),
             "col2": Column(dtype=float),
         },
         index=Index(dtype=str, name="ind0"),
     )
-    return schema
 
 
 @pytest.fixture
 def schema_multiindex() -> DataFrameSchema:
     """Fixture for schema with MultiIndex."""
-    schema = DataFrameSchema(
+    return DataFrameSchema(
         columns={
             "col1": Column(dtype=int),
             "col2": Column(dtype=float),
@@ -1587,14 +1551,13 @@ def schema_multiindex() -> DataFrameSchema:
             ]
         ),
     )
-    return schema
 
 
 @pytest.mark.parametrize("drop", [True, False])
 def test_set_index_drop(drop: bool, schema_simple: DataFrameSchema) -> None:
     """Test that setting index correctly handles column dropping."""
     test_schema = schema_simple.set_index(keys=["col1"], drop=drop)
-    if drop is True:
+    if drop:
         assert len(test_schema.columns) == 1
         assert list(test_schema.columns.keys()) == ["col2"]
     else:
@@ -1617,7 +1580,7 @@ def test_set_index_append(
     for key in ["col1", "col2"]:
         expected_index_names.append(key)
         test_schema = test_schema.set_index(keys=[key], append=append)
-        if append is True:
+        if append:
             assert isinstance(test_schema.index, MultiIndex)
             assert [
                 x.name for x in test_schema.index.indexes

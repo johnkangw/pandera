@@ -7,18 +7,18 @@ from pandera.inspection_utils import (
 
 
 class SomeMeta(type):
-    def __new__(mcs, *args, **kwargs):
-        return super().__new__(mcs, *args, **kwargs)
+    def __new__(cls, *args, **kwargs):
+        return super().__new__(cls, *args, **kwargs)
 
     def __init__(cls, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def regular_method_meta(cls):
-        return cls
+    def regular_method_meta(self):
+        return self
 
     @classmethod
-    def class_method_meta(mcs):
-        return mcs
+    def class_method_meta(cls):
+        return cls
 
     @staticmethod
     def static_method_meta():

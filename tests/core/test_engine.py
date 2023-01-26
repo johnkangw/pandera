@@ -12,9 +12,7 @@ from pandera.engines.engine import Engine
 
 class BaseDataType(DataType):
     def __eq__(self, obj: object) -> bool:
-        if isinstance(obj, type(self)):
-            return True
-        return False
+        return isinstance(obj, type(self))
 
     def __hash__(self) -> int:
         return hash(self.__class__.__name__)
@@ -91,15 +89,16 @@ def test_register_notclassmethod_from_parametrized_dtype(engine: Engine):
     """
 
     with pytest.raises(
-        ValueError,
-        match="_InvalidDtype.from_parametrized_dtype must be a classmethod.",
-    ):
+            ValueError,
+            match="_InvalidDtype.from_parametrized_dtype must be a classmethod.",
+        ):
+
+
+
 
         @engine.register_dtype
         class _InvalidDtype(BaseDataType):
-            def from_parametrized_dtype(  # pylint:disable=no-self-argument,no-self-use
-                cls, x: int
-            ):
+            def from_parametrized_dtype(self, x: int):
                 return x
 
 
@@ -178,15 +177,20 @@ def test_return_base_dtype(engine: Engine):
     assert engine.dtype(SimpleDtype()) == SimpleDtype()
     assert engine.dtype(SimpleDtype) == SimpleDtype()
 
+
+
     class ParametrizedDtypec(BaseDataType):
         def __init__(self, x: int) -> None:
             super().__init__()
             self.x = x
 
         def __eq__(self, obj: object) -> bool:
-            if not isinstance(obj, ParametrizedDtypec):
-                return NotImplemented
-            return obj.x == self.x
+            return (
+                obj.x == self.x
+                if isinstance(obj, ParametrizedDtypec)
+                else NotImplemented
+            )
+
 
     assert engine.dtype(ParametrizedDtypec(1)) == ParametrizedDtypec(1)
     with pytest.raises(

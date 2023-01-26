@@ -285,11 +285,7 @@ def numpy_complex_dtypes(
         max_imag = max_value.imag
     else:
         max_real = max_imag = None
-    if dtype.itemsize == 8:
-        width = 32
-    else:
-        width = 64
-
+    width = 32 if dtype.itemsize == 8 else 64
     # switch min and max values for imaginary if min value > max value
     if max_imag is not None and min_value.imag > max_imag:
         min_imag = max_imag

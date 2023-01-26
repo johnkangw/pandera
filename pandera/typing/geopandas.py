@@ -1,4 +1,5 @@
 """Pandera type annotations for GeoPandas."""
+
 from typing import TYPE_CHECKING, Generic, TypeVar
 
 from pandera.typing.common import DataFrameBase, SeriesBase
@@ -18,12 +19,7 @@ if GEOPANDAS_INSTALLED:
     from pandera.engines.pandas_engine import Geometry
 
     # pylint:disable=invalid-name
-    if TYPE_CHECKING:
-        T = TypeVar("T")  # pragma: no cover
-    else:
-        T = Schema
-
-    # pylint:disable=too-few-public-methods
+    T = TypeVar("T") if TYPE_CHECKING else Schema
     class GeoSeries(SeriesBase, gpd.GeoSeries, Generic[T]):
         """
         Representation of geopandas.GeoSeries, only used for type annotation.

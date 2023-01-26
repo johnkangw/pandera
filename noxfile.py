@@ -52,7 +52,7 @@ def _build_setup_requirements() -> Dict[str, List[Requirement]]:
     """Load requirments from setup.py."""
     dist = run_setup("setup.py")
     reqs = {"core": dist.install_requires}  # type: ignore
-    reqs.update(dist.extras_require)  # type: ignore
+    reqs |= dist.extras_require
     return {
         extra: list(parse_requirements(reqs)) for extra, reqs in reqs.items()
     }
@@ -106,13 +106,11 @@ def _build_requires() -> Dict[str, Dict[str, str]]:
         for pkg, specs in requires["all"].items()
         if pkg not in optionals
     }
-    requires.update(  # add extras
-        {
-            extra_name: {**_requirement_to_dict(pkgs), **requires["core"]}
-            for extra_name, pkgs in extras.items()
-            if extra_name != "all"
-        }
-    )
+    requires |= {
+        extra_name: {**_requirement_to_dict(pkgs), **requires["core"]}
+        for extra_name, pkgs in extras.items()
+        if extra_name != "all"
+    }
     return requires
 
 
@@ -128,11 +126,10 @@ def extract_requirement_name(spec: str) -> str:
     """
     Extract name of requirement from dependency string.
     """
-    # Assume name is everything up to the first invalid character
-    match = re.match(r"^[A-Za-z0-9-_]*", spec.strip())
-    if not match:
+    if match := re.match(r"^[A-Za-z0-9-_]*", spec.strip()):
+        return match[0]
+    else:
         raise ValueError(f"Cannot parse requirement {spec!r}")
-    return match[0]
 
 
 def conda_install(session: Session, *args):
@@ -249,7 +246,7 @@ def _generate_pip_deps_from_conda(
 
 
 @nox.session(python=PYTHON_VERSIONS)
-def requirements(session: Session) -> None:  # pylint:disable=unused-argument
+def requirements(session: Session) -> None:    # pylint:disable=unused-argument
     """Check that setup.py requirements match requirements-dev.txt"""
     install(session, "pyyaml")
     try:
@@ -259,26 +256,26 @@ def requirements(session: Session) -> None:  # pylint:disable=unused-argument
         print(f"{REQUIREMENT_PATH} has been re-generated ✨ 🍰 ✨")
         raise err
 
-    ignored_pkgs = {"black", "pandas"}
     mismatched = []
     # only compare package versions, not python version markers.
     str_dev_reqs = [str(x) for x in DEV_REQUIREMENTS]
+    ignored_pkgs = {"black", "pandas"}
     for extra, reqs in SETUP_REQUIREMENTS.items():
-        for req in reqs:
+        mismatched.extend(
+            f"{extra}: {req.project_name}"
+            for req in reqs
             if (
                 req.project_name not in ignored_pkgs
                 and str(req) not in str_dev_reqs
-            ):
-                mismatched.append(f"{extra}: {req.project_name}")
-
+            )
+        )
     if mismatched:
         print(
             f"Packages {mismatched} defined in setup.py "
             + f"do not match {REQUIREMENT_PATH}."
         )
         print(
-            "Modify environment.yml, "
-            + f"then run 'nox -s requirements' to generate {REQUIREMENT_PATH}"
+            f"Modify environment.yml, then run 'nox -s requirements' to generate {REQUIREMENT_PATH}"
         )
         sys.exit(1)
 
@@ -392,7 +389,19 @@ def docs(session: Session) -> None:
     session.chdir("docs")
 
     # build html docs
-    if not CI_RUN and not session.posargs:
+    if CI_RUN or session.posargs:
+        shutil.rmtree(os.path.join("_build"), ignore_errors=True)
+        args = session.posargs or [
+            "-v",
+            "-W",
+            "-E",
+            "-b=doctest",
+            "source",
+            "_build",
+        ]
+        session.run("sphinx-build", *args)
+
+    else:
         shutil.rmtree("_build", ignore_errors=True)
         shutil.rmtree(
             os.path.join("source", "reference", "generated"),
@@ -409,14 +418,3 @@ def docs(session: Session) -> None:
                 "source",
                 os.path.join("_build", builder, ""),
             )
-    else:
-        shutil.rmtree(os.path.join("_build"), ignore_errors=True)
-        args = session.posargs or [
-            "-v",
-            "-W",
-            "-E",
-            "-b=doctest",
-            "source",
-            "_build",
-        ]
-        session.run("sphinx-build", *args)

@@ -34,9 +34,7 @@ _CheckList = Union[Check, List[Check]]
 
 def _to_checklist(checks: Optional[_CheckList]) -> List[Check]:
     checks = checks or []
-    if isinstance(checks, Check):  # pragma: no cover
-        return [checks]
-    return checks
+    return [checks] if isinstance(checks, Check) else checks
 
 
 class FieldInfo:
@@ -87,9 +85,7 @@ class FieldInfo:
     @property
     def name(self) -> str:
         """Return the name of the field used in the DataFrame"""
-        if self.alias is not None:
-            return self.alias
-        return self.original_name
+        return self.alias if self.alias is not None else self.original_name
 
     def __set_name__(self, owner: Type, name: str) -> None:
         self.original_name = name
@@ -398,6 +394,4 @@ def dataframe_check(_fn=None, **check_kwargs) -> ClassCheck:
         )
         return check_method
 
-    if _fn:
-        return _wrapper(_fn)  # type: ignore
-    return _wrapper
+    return _wrapper(_fn) if _fn else _wrapper

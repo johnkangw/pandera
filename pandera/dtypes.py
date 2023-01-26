@@ -96,10 +96,7 @@ def immutable(
 
         return immutable_dtype
 
-    if pandera_dtype_cls is None:
-        return _wrapper
-
-    return _wrapper(pandera_dtype_cls)
+    return _wrapper if pandera_dtype_cls is None else _wrapper(pandera_dtype_cls)
 
 
 ###############################################################################
@@ -173,9 +170,7 @@ class Int(_PhysicalNumber):  # type: ignore
         )
 
     def __str__(self) -> str:
-        if self.__class__ is Int:
-            return "int"
-        return super().__str__()
+        return "int" if self.__class__ is Int else super().__str__()
 
 
 @immutable
@@ -219,9 +214,7 @@ class UInt(Int):
     signed: bool = dataclasses.field(default=False, init=False)
 
     def __str__(self) -> str:
-        if self.__class__ is UInt:
-            return "uint"
-        return super().__str__()
+        return "uint" if self.__class__ is UInt else super().__str__()
 
 
 @immutable
@@ -277,9 +270,7 @@ class Float(_PhysicalNumber):  # type: ignore
         )
 
     def __str__(self) -> str:
-        if self.__class__ is Float:
-            return "float"
-        return super().__str__()
+        return "float" if self.__class__ is Float else super().__str__()
 
 
 @immutable
@@ -329,9 +320,7 @@ class Complex(_PhysicalNumber):  # type: ignore
         )
 
     def __str__(self) -> str:
-        if self.__class__ is Complex:
-            return "complex"
-        return super().__str__()
+        return "complex" if self.__class__ is Complex else super().__str__()
 
 
 @immutable
